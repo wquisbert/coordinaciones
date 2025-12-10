@@ -3,130 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GeoVisor - Redes de Salud</title>
+    <title>GeoVisor Coordinaciones de Red</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'corp': { 
+                        'brand': { 
                             50: '#fef2f2', 
                             100: '#fee2e2', 
                             600: '#dc2626', 
                             800: '#991b1b', // Rojo Institucional
-                            900: '#7f1d1d' 
+                            900: '#7f1d1d', // Rojo Oscuro Header
+                            'green': '#059669' // Excel
                         }
                     },
-                    fontFamily: {
-                        sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
-                    }
+                    fontFamily: { sans: ['Roboto', 'Segoe UI', 'sans-serif'] }
                 }
             }
         }
     </script>
 
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #f3f4f6; }
         
         /* Personalización de Scrollbar */
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #991b1b; }
+        .scroller::-webkit-scrollbar { width: 6px; }
+        .scroller::-webkit-scrollbar-track { background: #f1f1f1; }
+        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .scroller::-webkit-scrollbar-thumb:hover { background: #991b1b; }
 
         /* Filtro para Marcadores Rojos */
         .leaflet-marker-icon { filter: hue-rotate(140deg) brightness(0.9) saturate(1.5); }
         
-        /* Efecto Tarjeta Activa */
+        /* Efecto Tarjeta Activa en Lista */
         .card-active { 
-            border-left: 4px solid #991b1b !important; 
-            background-color: #fff1f2 !important;
-            transform: translateX(4px);
+            border-left: 5px solid #991b1b !important; 
+            background: linear-gradient(to right, #fff1f2, #ffffff) !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        /* Estilo del Control de Capas de Leaflet */
+        /* Estilo del Popup (Ficha Técnica en Mapa) */
+        .leaflet-popup-content-wrapper { 
+            border-radius: 12px; 
+            padding: 0; 
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+        .leaflet-popup-content { margin: 0; width: 300px !important; }
+        .leaflet-container a.leaflet-popup-close-button {
+            color: white; top: 5px; right: 5px; font-size: 18px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Control de Capas */
         .leaflet-control-layers {
-            border: none !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-            padding: 10px !important;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 12px;
-            font-weight: 600;
+            border: none !important; border-radius: 8px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+            padding: 8px !important; font-weight: 600; font-family: 'Segoe UI';
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .layout-container { flex-direction: column-reverse; }
-            .sidebar-panel { width: 100% !important; height: 45% !important; }
-            .map-panel { width: 100% !important; height: 55% !important; }
+            .layout { flex-direction: column-reverse; }
+            .panel-side { width: 100% !important; height: 50% !important; }
+            .panel-map { width: 100% !important; height: 50% !important; }
         }
     </style>
 </head>
-<body class="bg-gray-100 h-screen w-screen flex flex-col text-gray-800">
+<body class="flex flex-col h-screen w-screen text-gray-800">
 
-    <header class="bg-corp-900 text-white h-14 shrink-0 flex items-center justify-between px-6 shadow-lg z-30">
-        <div class="flex items-center gap-3">
-            <div class="bg-white/10 p-1.5 rounded-lg">
-                <i class="fa-solid fa-map-location-dot text-lg"></i>
+    <header class="bg-brand-900 text-white h-16 shrink-0 flex items-center justify-between px-6 shadow-xl z-30 relative">
+        <div class="flex items-center gap-4">
+            <div class="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+                <i class="fa-solid fa-map-location text-2xl"></i>
             </div>
             <div>
-                <h1 class="font-bold text-sm md:text-base tracking-wide leading-tight">COORDINACIÓN DE REDES</h1>
-                <p class="text-[10px] text-gray-300 font-light">Sistema de Geolocalización</p>
+                <h1 class="font-extrabold text-lg md:text-xl tracking-tight leading-none">GEOVISOR</h1>
+                <p class="text-xs md:text-sm font-light text-gray-200 opacity-90 tracking-wide">COORDINACIONES DE RED</p>
             </div>
         </div>
-        <div class="hidden md:flex items-center gap-3">
-            <div class="text-right">
-                <p class="text-[10px] uppercase text-gray-400 font-bold">Estado</p>
-                <p class="text-xs font-bold text-green-400 flex items-center justify-end gap-1">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> En Línea
-                </p>
+        
+        <div class="hidden md:flex items-center gap-6">
+            <div class="text-right border-r border-white/20 pr-6">
+                <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">ESTADO DEL SISTEMA</p>
+                <div class="flex items-center justify-end gap-2">
+                    <span class="relative flex h-2.5 w-2.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </span>
+                    <span class="text-xs font-bold">Activo</span>
+                </div>
+            </div>
+            <div class="text-center">
+                <p class="text-[10px] uppercase text-gray-400 font-bold">REGISTROS</p>
+                <p class="text-lg font-bold" id="headerCount">0</p>
             </div>
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden layout-container relative">
+    <div class="flex flex-1 overflow-hidden layout relative">
 
-        <aside class="sidebar-panel w-[380px] bg-white flex flex-col border-r border-gray-200 z-20 shadow-xl">
+        <aside class="panel-side w-[420px] bg-white flex flex-col border-r border-gray-200 z-20 shadow-2xl">
             
-            <div class="p-4 bg-white border-b border-gray-100 shadow-sm z-10">
-                <div class="relative mb-3">
-                    <i class="fa-solid fa-search absolute left-3 top-3.5 text-gray-400 text-xs"></i>
-                    <input type="text" id="textSearch" placeholder="Buscar médico, dirección o zona..." 
-                        class="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-corp-800 focus:bg-white outline-none transition">
+            <div class="p-5 bg-white border-b border-gray-100 shadow-sm z-10 space-y-4">
+                
+                <div class="relative group">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-gray-400 group-focus-within:text-brand-800 transition"></i>
+                    <input type="text" id="textSearch" placeholder="Buscar coordinador, municipio..." 
+                        class="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-800 focus:bg-white outline-none transition shadow-sm">
                 </div>
                 
                 <div class="flex gap-2">
                     <div class="relative flex-grow">
-                        <select id="filtroRed" class="w-full pl-3 pr-8 py-2 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-corp-800 outline-none appearance-none cursor-pointer">
-                            <option value="TODOS">TODAS LAS REDES</option>
+                        <select id="filtroRed" class="w-full pl-3 pr-8 py-2.5 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-800 outline-none appearance-none cursor-pointer uppercase tracking-wide">
+                            <option value="TODOS">MOSTRAR TODAS LAS REDES</option>
                         </select>
-                        <i class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-gray-400 text-xs pointer-events-none"></i>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-gray-400 text-xs pointer-events-none"></i>
                     </div>
-                    <div class="bg-corp-800 text-white px-3 py-2 rounded-lg text-xs font-bold min-w-[60px] text-center flex flex-col justify-center">
-                        <span id="totalContador" class="text-sm">0</span>
-                    </div>
+                    
+                    <button onclick="descargarExcel()" class="bg-brand-green hover:bg-green-700 text-white px-3 py-2 rounded-lg shadow-sm transition transform active:scale-95 flex items-center justify-center gap-2" title="Descargar Reporte">
+                        <i class="fa-solid fa-file-csv"></i>
+                    </button>
                 </div>
             </div>
 
-            <div id="listaCards" class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 bg-gray-50/50">
-                <div class="flex flex-col items-center justify-center h-40 text-gray-400">
-                    <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3 text-corp-800"></i>
-                    <p class="text-xs font-medium">Cargando base de datos...</p>
+            <div id="listaCards" class="flex-1 overflow-y-auto scroller p-3 space-y-3 bg-slate-50">
+                <div class="flex flex-col items-center justify-center h-40 text-gray-400 animate-pulse">
+                    <i class="fa-solid fa-server text-3xl mb-2"></i>
+                    <p class="text-xs font-medium">Sincronizando base de datos...</p>
                 </div>
+            </div>
+            
+            <div class="p-2 bg-gray-100 text-center text-[10px] text-gray-500 border-t border-gray-200">
+                Geolocalización en tiempo real • v3.5
             </div>
         </aside>
 
-        <main class="map-panel flex-1 relative bg-gray-200">
+        <main class="panel-map flex-1 relative bg-gray-200">
             <div id="map" class="h-full w-full z-0"></div>
             
-            <button onclick="resetVista()" class="absolute bottom-8 right-5 z-[400] bg-corp-800 text-white w-10 h-10 rounded-full shadow-xl hover:bg-corp-900 transition flex items-center justify-center group" title="Ver Mapa Completo">
-                <i class="fa-solid fa-earth-americas text-lg group-hover:scale-110 transition"></i>
+            <button onclick="resetVista()" class="absolute bottom-8 right-5 z-[400] bg-brand-800 text-white w-12 h-12 rounded-full shadow-2xl hover:bg-brand-900 transition flex items-center justify-center group tooltip border-2 border-white" title="Vista General">
+                <i class="fa-solid fa-globe text-xl group-hover:rotate-180 transition duration-500"></i>
             </button>
         </main>
     </div>
@@ -136,232 +158,197 @@
 
     <script>
         // ==========================================
-        // CONFIGURACIÓN (CAMBIA TU URL AQUÍ)
+        // CONFIGURACIÓN (URL CSV)
         // ==========================================
         const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjsuS6RyI-irn3lxS6rkTfTBUNWRJ89w2AgzPi5ExGu0mY61VNwAZUfyn84mzUI2wk1jU7fw7VHNNS/pub?output=csv"; 
         // ==========================================
 
-        var map, markersLayer;
-        var datosCompletos = [];
+        var map, markersLayer, datosCompletos = [], datosVisibles = [];
         var mapaMarcadores = {};
 
-        // 1. DEFINICIÓN DE CAPAS (LAYERS)
-        // Capa 1: Mapa Estándar (Calles)
-        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap',
-            maxZoom: 19
-        });
+        // Capas
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'OSM', maxZoom: 19 });
+        const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri', maxZoom: 18 });
+        const voyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: 'CartoDB', maxZoom: 20 });
+        const oscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: 'CartoDB', maxZoom: 20 });
 
-        // Capa 2: Satélite (Esri World Imagery)
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri',
-            maxZoom: 18
-        });
-
-        // Capa 3: Modo Oscuro (CartoDB Dark Matter) - Ideal para dashboards
-        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© CartoDB',
-            maxZoom: 19
-        });
-
-        // Capa 4: Minimalista (CartoDB Voyager) - Muy limpio
-        const voyagerLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '© CartoDB',
-            maxZoom: 19
-        });
-
-
-        // 2. INICIALIZACIÓN
         document.addEventListener('DOMContentLoaded', () => {
             initMap();
             cargarDatos();
-            
             // Listeners Filtros
             document.getElementById('textSearch').addEventListener('input', () => aplicarFiltros(false));
             document.getElementById('filtroRed').addEventListener('change', () => aplicarFiltros(true));
         });
 
         function initMap() {
-            // Iniciar mapa con la capa "Voyager" por defecto (es muy moderna)
-            map = L.map('map', { 
-                zoomControl: false,
-                layers: [voyagerLayer] 
-            }).setView([-16.5000, -68.1500], 12);
-
-            // Control de Zoom arriba derecha
+            map = L.map('map', { zoomControl: false, layers: [voyager] }).setView([-16.5000, -68.1500], 6);
             L.control.zoom({ position: 'topright' }).addTo(map);
-
-            // CONTROL DE CAPAS (Aquí ocurre la magia)
-            const baseMaps = {
-                "Mapa Estándar": osmLayer,
-                "Satélite HD": satelliteLayer,
-                "Modo Oscuro": darkLayer,
-                "Diseño Moderno": voyagerLayer
-            };
-            L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
-
-            // Capa de marcadores
+            L.control.layers({ 
+                "Mapa Claro": voyager, 
+                "Estándar": osm, 
+                "Satélite": satelite, 
+                "Modo Oscuro": oscuro 
+            }, null, { position: 'topright' }).addTo(map);
             markersLayer = L.layerGroup().addTo(map);
         }
 
         function cargarDatos() {
-            if(!URL_CSV.startsWith("http")) {
-                document.getElementById('listaCards').innerHTML = `<div class="p-5 text-center text-red-600 text-xs font-bold">Error: URL del CSV no configurada.</div>`;
-                return;
-            }
+            if(!URL_CSV.startsWith("http")) { document.getElementById('listaCards').innerHTML = "<p class='p-4 text-red-600 text-xs text-center'>⚠️ URL CSV No Configurada</p>"; return; }
 
             Papa.parse(URL_CSV, {
                 download: true, header: true, skipEmptyLines: true,
                 complete: function(results) {
                     datosCompletos = results.data;
-                    llenarComboRedes();
+                    llenarCombo();
                     aplicarFiltros(true); 
-                },
-                error: (err) => console.error(err)
+                }
             });
         }
 
-        // 3. RENDERIZADO UNIFICADO
-        function renderizar(datos, ajustarZoom) {
+        // --- RENDERIZADO DE "FICHA TÉCNICA" EN POPUP ---
+        function renderizar(datos, zoom) {
             const lista = document.getElementById('listaCards');
             lista.innerHTML = "";
             markersLayer.clearLayers();
             mapaMarcadores = {};
+            datosVisibles = datos;
             
             let bounds = L.latLngBounds();
             let count = 0;
 
             if(datos.length === 0) {
-                lista.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-40 text-gray-400">
-                        <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
-                        <p class="text-xs">No hay resultados.</p>
-                    </div>`;
-                document.getElementById('totalContador').innerText = "0";
+                lista.innerHTML = `<div class="text-center mt-10 text-gray-400 text-xs">No se encontraron coordinaciones.</div>`;
+                document.getElementById('headerCount').innerText = "0";
                 return;
             }
 
             datos.forEach((fila, index) => {
                 const lat = parseFloat(fila.LATITUD || fila.latitud);
                 const lng = parseFloat(fila.LONGITUD || fila.longitud);
-                const red = fila.RED || fila.red || "General";
+                const red = (fila.RED || fila.red || "Sin Asignar").toUpperCase();
                 const resp = fila.RESPONSABLE || fila.responsable || "Sin Nombre";
-                const dir = fila.DIRECCION || fila.direccion || "";
+                const dir = fila.DIRECCION || fila.direccion || "No registrada";
                 const id = `card-${index}`;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
                     count++;
-
-                    // --- MARCADOR ---
-                    const marker = L.marker([lat, lng]);
+                    
+                    // 1. HTML DEL POPUP (FICHA TÉCNICA DINÁMICA)
                     const popupHTML = `
-                        <div class="text-center">
-                            <span class="text-[10px] font-bold text-corp-800 uppercase tracking-wide">${red}</span>
-                            <h3 class="font-bold text-gray-800 text-sm mt-1 mb-1">${resp}</h3>
-                            <button onclick="iluminarTarjeta('${id}')" class="bg-corp-800 text-white text-[10px] px-2 py-1 rounded hover:bg-corp-900 transition">
-                                Ver Datos
-                            </button>
+                        <div class="font-sans">
+                            <div class="bg-gradient-to-r from-brand-900 to-brand-800 text-white p-3">
+                                <p class="text-[10px] font-bold opacity-75 uppercase tracking-wider">Coordinación de Red</p>
+                                <h3 class="font-bold text-sm leading-tight mt-1">${red}</h3>
+                            </div>
+                            <div class="p-4 bg-white">
+                                <div class="mb-3">
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-1"><i class="fa-solid fa-user-doctor mr-1"></i> Responsable</p>
+                                    <p class="text-sm font-bold text-gray-800 border-b border-gray-100 pb-2">${resp}</p>
+                                </div>
+                                <div class="mb-3">
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-1"><i class="fa-solid fa-map-pin mr-1"></i> Ubicación</p>
+                                    <p class="text-xs text-gray-600 leading-relaxed">${dir}</p>
+                                </div>
+                                <div class="flex items-center justify-between mt-4 pt-2 border-t border-gray-100">
+                                    <code class="text-[10px] text-brand-800 font-mono bg-brand-50 px-2 py-1 rounded">
+                                        ${lat.toFixed(4)}, ${lng.toFixed(4)}
+                                    </code>
+                                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" 
+                                       class="bg-gray-800 hover:bg-black text-white text-[10px] font-bold px-3 py-1.5 rounded-md transition flex items-center gap-1">
+                                       GPS <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     `;
+
+                    const marker = L.marker([lat, lng]);
                     marker.bindPopup(popupHTML);
                     marker.on('click', () => iluminarTarjeta(id));
-                    
                     markersLayer.addLayer(marker);
                     bounds.extend([lat, lng]);
                     mapaMarcadores[id] = { marker, lat, lng };
 
-                    // --- TARJETA ---
+                    // 2. HTML DE LA TARJETA LATERAL
                     const card = document.createElement('div');
                     card.id = id;
-                    card.className = "bg-white p-4 rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 border-l-transparent group";
+                    card.className = "bg-white p-4 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-transparent group";
                     card.onclick = () => enfocarPunto(id);
 
                     card.innerHTML = `
                         <div class="flex justify-between items-start mb-2">
-                            <span class="bg-corp-50 text-corp-800 text-[10px] font-extrabold px-2 py-0.5 rounded uppercase border border-corp-100">${red}</span>
-                            <i class="fa-solid fa-location-arrow text-gray-300 group-hover:text-corp-600 transition text-xs"></i>
+                            <span class="bg-gray-100 text-gray-600 text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wide group-hover:bg-brand-50 group-hover:text-brand-800 transition">${red}</span>
+                            <i class="fa-solid fa-location-crosshairs text-gray-300 group-hover:text-brand-600 transition"></i>
                         </div>
-                        <h4 class="text-sm font-bold text-gray-800 leading-tight mb-1">${resp}</h4>
-                        <p class="text-xs text-gray-500 line-clamp-2 mb-3 h-8 leading-4">${dir}</p>
-                        
-                        <div class="flex items-center justify-between pt-2 border-t border-gray-50">
-                            <span class="text-[10px] text-gray-400 font-mono">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
-                            <div class="flex gap-2">
-                                <a href="http://maps.google.com/maps?q=${lat},${lng}" target="_blank" onclick="event.stopPropagation()" 
-                                   class="text-gray-400 hover:text-corp-800 transition" title="Abrir GPS">
-                                   <i class="fa-solid fa-map-location-dot"></i>
-                                </a>
-                            </div>
-                        </div>
+                        <h4 class="text-sm font-bold text-gray-800 mb-1 leading-snug">${resp}</h4>
+                        <p class="text-xs text-gray-400 line-clamp-1 mb-2"><i class="fa-regular fa-building mr-1"></i> ${dir}</p>
                     `;
                     lista.appendChild(card);
                 }
             });
 
-            document.getElementById('totalContador').innerText = count;
-
-            if (count > 0 && ajustarZoom) {
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-            }
+            document.getElementById('headerCount').innerText = count;
+            if (count > 0 && zoom) map.fitBounds(bounds, { padding: [80, 80], maxZoom: 16 });
         }
 
-        // 4. LÓGICA DE NEGOCIO
-        function aplicarFiltros(ajustarZoom = false) {
-            const texto = document.getElementById('textSearch').value.toLowerCase();
-            const redFiltro = document.getElementById('filtroRed').value;
-
-            const filtrados = datosCompletos.filter(d => {
-                const red = (d.RED || d.red || "").toString();
-                const resp = (d.RESPONSABLE || d.responsable || "").toLowerCase();
-                const dir = (d.DIRECCION || d.direccion || "").toLowerCase();
-                
-                const matchRed = redFiltro === "TODOS" || red === redFiltro;
-                const matchText = resp.includes(texto) || dir.includes(texto) || red.toLowerCase().includes(texto);
-                
-                return matchRed && matchText;
+        // --- FILTROS Y LÓGICA ---
+        function aplicarFiltros(zoom) {
+            const txt = document.getElementById('textSearch').value.toLowerCase();
+            const red = document.getElementById('filtroRed').value;
+            const res = datosCompletos.filter(d => {
+                const r = (d.RED || d.red || "").toString();
+                const n = (d.RESPONSABLE || d.responsable || "").toLowerCase();
+                const z = (d.DIRECCION || d.direccion || "").toLowerCase();
+                return (red === "TODOS" || r === red) && (n.includes(txt) || z.includes(txt) || r.toLowerCase().includes(txt));
             });
-
-            renderizar(filtrados, ajustarZoom);
+            renderizar(res, zoom);
         }
 
-        function llenarComboRedes() {
-            const select = document.getElementById('filtroRed');
-            const redes = [...new Set(datosCompletos.map(d => d.RED || d.red))].filter(Boolean).sort();
-            redes.forEach(r => {
-                const op = document.createElement('option');
-                op.value = r; op.innerText = r;
-                select.appendChild(op);
+        function llenarCombo() {
+            const sel = document.getElementById('filtroRed');
+            [...new Set(datosCompletos.map(d => d.RED || d.red))].filter(Boolean).sort().forEach(r => {
+                const o = document.createElement('option'); o.value = r; o.innerText = r; sel.appendChild(o);
             });
         }
 
-        // 5. INTERACCIONES
+        // --- INTERACCIONES ---
         function enfocarPunto(id) {
-            const info = mapaMarcadores[id];
-            if(info) {
-                // Estilo tarjeta
+            const obj = mapaMarcadores[id];
+            if(obj) {
                 document.querySelectorAll('.card-active').forEach(c => c.classList.remove('card-active'));
-                const card = document.getElementById(id);
-                if(card) card.classList.add('card-active');
-
-                // Movimiento Mapa
-                map.flyTo([info.lat, info.lng], 17, { duration: 1.2 });
-                info.marker.openPopup();
+                document.getElementById(id).classList.add('card-active');
+                map.flyTo([obj.lat, obj.lng], 17, { duration: 1.5 });
+                setTimeout(() => obj.marker.openPopup(), 500);
             }
         }
-
         function iluminarTarjeta(id) {
-            const card = document.getElementById(id);
-            if(card) {
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const el = document.getElementById(id);
+            if(el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 document.querySelectorAll('.card-active').forEach(c => c.classList.remove('card-active'));
-                card.classList.add('card-active');
+                el.classList.add('card-active');
             }
         }
-
         function resetVista() {
             document.getElementById('textSearch').value = "";
             document.getElementById('filtroRed').value = "TODOS";
             aplicarFiltros(true);
+        }
+        function descargarExcel() {
+            if(datosVisibles.length===0) return Swal.fire('Info', 'No hay datos para exportar', 'info');
+            const data = datosVisibles.map(i => ({
+                "RED": (i.RED||i.red||"").toUpperCase(),
+                "RESPONSABLE": (i.RESPONSABLE||i.responsable||"").toUpperCase(),
+                "DIRECCION": i.DIRECCION||i.direccion,
+                "LAT": i.LATITUD||i.latitud,
+                "LON": i.LONGITUD||i.longitud
+            }));
+            const csv = Papa.unparse(data);
+            const blob = new Blob(["\uFEFF"+csv], {type: "text/csv;charset=utf-8;"});
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Reporte_GeoVisor_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
         }
     </script>
 </body>
